@@ -1,0 +1,28 @@
+# Python dependencies for the VT Seva subtitle workflow.
+# Python 3.11+ (developed on 3.14). Install into a venv:
+#   python -m venv .venv
+#   .venv\Scripts\Activate.ps1        # Windows PowerShell
+#   pip install -r subtitles/requirements.txt
+
+# Streamlit UI
+streamlit>=1.35.0
+
+# OpenAI: Whisper translations (timing) + gpt-4o refine (wording pass)
+openai>=1.40.0
+
+# Loads OPENAI_API_KEY from .env.local / .env
+python-dotenv>=1.0.0
+
+# YouTube audio download + chunking for the Whisper pass
+yt-dlp>=2024.05.27
+
+# .docx export for translated subtitles
+python-docx>=1.1.0
+
+# NOTE: ffmpeg must be installed and on PATH (used by yt-dlp to chunk audio).
+#   Windows:  winget install Gyan.FFmpeg   (or: choco install ffmpeg)
+#   macOS:    brew install ffmpeg
+#   Linux:    apt-get install ffmpeg
+#
+# sloka_normalize.py uses only the Python standard library (difflib, json, re)
+# -- no extra dependency.

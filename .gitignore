@@ -1,0 +1,68 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# python (ingest pipeline)
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+ingest/youtube_cookies.txt
+
+# local-only large artifacts
+cache/audio/
+data/embeddings.npy
+data/chunks_text.jsonl
+data/chunks_book*.jsonl
+data/corpus/lmig1_pages.jsonl
+scratch/lmig1_batch.json
+scratch/lmig1_pages/
+scratch/lmig1_pages_small/
+
+# Local-only evaluation artefacts (eval_vs_baseline.py outputs).
+# The repo-level copilot-instructions also forbid staging docs/ask-test-run/.
+docs/ask-test-run/eval_questions.jsonl
+docs/ask-test-run/eval_results.jsonl
+docs/ask-test-run/eval_report.html
+docs/ask-test-run/feedback_eval_results.jsonl
+docs/ask-test-run/feedback_report.html
+
