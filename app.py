@@ -26,7 +26,7 @@ load_dotenv(dotenv_path=Path(__file__).parent / ".env.local")
 load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 log.info("App started — env loaded")
 
-SUPPORTED_TYPES = ["srt"]
+SUPPORTED_TYPES = ["srt", "sbv"]
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -49,6 +49,31 @@ def _parse_srt_blocks(content: str) -> list[dict]:
             log.warning(f"_parse_srt_blocks | skipped malformed block: {block[:60]!r}")
     log.info(f"_parse_srt_blocks | parsed segments: {len(segments)}")
     return segments
+
+
+def _sbv_to_srt(sbv_content: str) -> str:
+    """Convert SBV (YouTube) subtitle format to SRT format."""
+    blocks = re.split(r"\n\s*\n", sbv_content.strip())
+    srt_blocks = []
+    idx = 1
+    for block in blocks:
+        lines = block.strip().splitlines()
+        if len(lines) < 2:
+            continue
+        timestamp_line = lines[0].strip()
+        if not re.match(r"\d+:\d{2}:\d{2}\.\d+,\d+:\d{2}:\d{2}\.\d+", timestamp_line):
+            continue
+
+        def _fmt(ts: str) -> str:
+            h, m, s_ms = ts.split(":")
+            s, ms = s_ms.split(".")
+            return f"{h.zfill(2)}:{m}:{s},{ms.ljust(3, '0')[:3]}"
+
+        start, end = timestamp_line.split(",", 1)
+        text = "\n".join(lines[1:]).strip()
+        srt_blocks.append(f"{idx}\n{_fmt(start)} --> {_fmt(end)}\n{text}")
+        idx += 1
+    return "\n\n".join(srt_blocks)
 
 
 def translate_srt(srt_content: str, status_fn) -> str:
@@ -147,7 +172,7 @@ st.set_page_config(
 
 st.title("Telugu → English Subtitle Converter")
 st.caption(
-    "Upload a Telugu `.srt` file. Subtitles are translated to English "
+    "Upload a Telugu `.srt` or `.sbv` file. Subtitles are translated to English "
     "and available for download as `.srt` or `.docx`."
 )
 
@@ -162,9 +187,9 @@ with left:
     st.subheader("Input")
 
     uploaded = st.file_uploader(
-        "Choose an SRT file",
+        "Choose an SRT or SBV file",
         type=SUPPORTED_TYPES,
-        help="Supported format: .srt",
+        help="Supported formats: .srt, .sbv",
     )
 
     if uploaded:
@@ -190,6 +215,8 @@ with right:
         with st.spinner("Processing — this may take a few minutes …"):
             try:
                 srt_raw = uploaded.getvalue().decode("utf-8", errors="replace")
+                if uploaded.name.lower().endswith(".sbv"):
+                    srt_raw = _sbv_to_srt(srt_raw)
                 srt_text = translate_srt(srt_raw, lambda msg: status_box.info(msg))
 
                 stem = Path(uploaded.name).stem
