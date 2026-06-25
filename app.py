@@ -24,7 +24,6 @@ SUPPORTED_VIDEO_TYPES = ["mp4", "mov", "avi", "mkv", "webm", "m4v"]
 SUPPORTED_TYPES = SUPPORTED_VIDEO_TYPES + ["srt"]
 
 # ── helpers ──────────────────────────────────────────────────────────────────
-
 def _seconds_to_srt_time(s: float) -> str:
     h = int(s // 3600)
     m = int((s % 3600) // 60)
@@ -194,26 +193,68 @@ def srt_to_docx(srt_content: str) -> bytes:
     return buf.getvalue()
 
 
+# def download_from_url(url: str, dest_dir: str, status_fn) -> str:
+#     """Download video from a URL using yt-dlp; return local file path."""
+#     status_fn("Downloading video from URL …")
+#     out_template = str(Path(dest_dir) / "downloaded.%(ext)s")
+#     cmd = [
+#         "yt-dlp",
+#         "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+#         "--merge-output-format", "mp4",
+#         "-o", out_template,
+#         url,
+#     ]
+#     proc = subprocess.run(cmd, capture_output=True, text=True)
+#     if proc.returncode != 0:
+#         raise RuntimeError(f"yt-dlp failed:\n{proc.stderr[-1500:]}")
+#     matches = list(Path(dest_dir).glob("downloaded.*"))
+#     if not matches:
+#         raise RuntimeError("yt-dlp produced no output file.")
+#     return str(matches[0])
+
 def download_from_url(url: str, dest_dir: str, status_fn) -> str:
     """Download video from a URL using yt-dlp; return local file path."""
     status_fn("Downloading video from URL …")
     out_template = str(Path(dest_dir) / "downloaded.%(ext)s")
+    
     cmd = [
         "yt-dlp",
         "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
         "--merge-output-format", "mp4",
         "-o", out_template,
-        url,
     ]
+
+    # --- NEW SECURE COOKIE HANDLING ---
+    cookies_content = os.environ.get("YT_COOKIES")
+    cookie_filepath = None
+    
+    if cookies_content:
+        # 1. Create a secure temporary file
+        cookie_file = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt")
+        # 2. Write the environment variable string into this temp file
+        cookie_file.write(cookies_content)
+        cookie_file.close()
+        cookie_filepath = cookie_file.name
+        
+        # 3. Tell yt-dlp to use this temporary file
+        cmd.extend(["--cookies", cookie_filepath])
+    # ----------------------------------
+
+    # Add the URL to the very end of the command
+    cmd.append(url)
+
     proc = subprocess.run(cmd, capture_output=True, text=True)
+    
+    # 4. Instantly clean up and delete the temporary cookie file!
+    if cookie_filepath and os.path.exists(cookie_filepath):
+        os.remove(cookie_filepath)
+
     if proc.returncode != 0:
         raise RuntimeError(f"yt-dlp failed:\n{proc.stderr[-1500:]}")
     matches = list(Path(dest_dir).glob("downloaded.*"))
     if not matches:
         raise RuntimeError("yt-dlp produced no output file.")
-    return str(matches[0])
-
-
+    return str(matches)
 # ── UI ───────────────────────────────────────────────────────────────────────
 
 st.set_page_config(
